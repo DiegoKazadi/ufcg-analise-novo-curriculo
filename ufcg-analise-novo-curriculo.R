@@ -157,46 +157,124 @@ nrow(outliers)
 
 # Transformações Realizadas nas Variáveis
 
-library(dplyr)
-
 # Criar a variável "Situacao_Final" com base em "Status" e "Tipo de Evasao"
-dados_tratados <- dados_filtrados %>%
-  mutate(
-    Situacao_Final = case_when(
-      Status == "ATIVO" ~ "Ativo",
-      Status == "INATIVO" & Tipo_de_Evasao == "GRADUADO" ~ "Graduado",
-      Status == "INATIVO" & Tipo_de_Evasao %in% c("CANCELAMENTO POR ABANDONO", "CANCELAMENTO P SOLICITACAO ALUNO") ~ "Evadido",
-      TRUE ~ "Outro"  # Caso existam outras combinações
-    )
-  )
+dados_transformados <- dados_filtrados %>%
+  mutate(Situacao_Final = case_when(
+    Status == "ATIVO" ~ "Ativo",
+    `Tipo de Evasão` == "GRADUADO" ~ "Graduado",
+    `Tipo de Evasão` %in% c("CANCELAMENTO POR ABANDONO", "CANCELAMENTO P SOLICITACAO ALUNO") ~ "Evadido",
+    TRUE ~ NA_character_
+  ))
 
-# Exemplo de padronização de categorias (ajuste conforme necessário)
-dados_tratados <- dados_tratados %>%
-  mutate(
-    Forma_de_Ingresso = case_when(
-      Forma_de_Ingresso %in% c("Vestibular", "vestibular") ~ "Vestibular",
-      Forma_de_Ingresso %in% c("SISU", "sisu") ~ "SISU",
-      TRUE ~ Forma_de_Ingresso
-    ),
-    Cor = case_when(
-      Cor %in% c("Parda", "parda") ~ "Parda",
-      Cor %in% c("Branca", "branca") ~ "Branca",
-      TRUE ~ Cor
-    ),
-    Estado_Civil = case_when(
-      Estado_Civil %in% c("Solteiro", "solteiro") ~ "Solteiro",
-      Estado_Civil %in% c("Casado", "casado") ~ "Casado",
-      TRUE ~ Estado_Civil
-    )
-  )
+# Verificar resultado
+table(dados_transformados$Situacao_Final)
 
-# Visualizar resumo da nova variável criada
-table(dados_tratados$Situacao_Final)
+# Visualizar categorias originais (opcional)
+table(dados_filtrados$Status)
+table(dados_filtrados$`Tipo de Evasão`)
+
+# Criar nova variável 'Situacao_Final' conforme as regras:
+# - "Ativo" quando Status == "ATIVO"
+# - "Graduado" quando Tipo de Evasão == "GRADUADO"
+# - "Evadido" para os outros tipos de evasão (cancelamentos)
+
+dados_transformados <- dados_filtrados %>%
+  mutate(Situacao_Final = case_when(
+    Status == "ATIVO" ~ "Ativo",
+    `Tipo de Evasão` == "GRADUADO" ~ "Graduado",
+    `Tipo de Evasão` %in% c("CANCELAMENTO POR ABANDONO", "CANCELAMENTO P SOLICITACAO ALUNO") ~ "Evadido",
+    TRUE ~ NA_character_  # Caso haja algum registro não previsto
+  ))
+
+# Verificar resultado
+table(dados_transformados$Situacao_Final)
+
+###
+
+# 4.4 Análise Exploratória dos Dados
+library(tidyverse)
+
+# Converter "Período de Ingresso" para fator ordenado (caso seja string)
+dados_filtrados <- dados_filtrados %>%
+  mutate(`Período de Ingresso` = factor(`Período de Ingresso`, levels = sort(unique(`Período de Ingresso`))))
+
+# Contar número de alunos por ano/período de ingresso
+contagem_ingressos <- dados_filtrados %>%
+  group_by(`Período de Ingresso`) %>%
+  summarise(Total_Alunos = n())
+
+# Visualizar tabela
+print(contagem_ingressos)
+
+# Gráfico de barras da distribuição por período de ingresso
+ggplot(contagem_ingressos, aes(x = `Período de Ingresso`, y = Total_Alunos)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  labs(
+    title = "Distribuição dos Alunos por Período de Ingresso (2011-2023)",
+    x = "Período de Ingresso",
+    y = "Número de Alunos"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 
+###
+
+# Certifique-se que 'Período de Ingresso' é fator ordenado
+dados_filtrados <- dados_filtrados %>%
+  mutate(`Período de Ingresso` = factor(`Período de Ingresso`, levels = sort(unique(`Período de Ingresso`))))
+
+# Contagem por período
+contagem_ingressos <- dados_filtrados %>%
+  group_by(`Período de Ingresso`) %>%
+  summarise(Total_Alunos = n())
+
+# Verificar níveis do fator e conferir se 2023.2 está presente
+print(levels(dados_filtrados$`Período de Ingresso`))
+print(contagem_ingressos)
+
+# Gráfico com valores acima das barras
+ggplot(contagem_ingressos, aes(x = `Período de Ingresso`, y = Total_Alunos)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  geom_text(aes(label = Total_Alunos), vjust = -0.5, size = 3.5) +
+  labs(
+    title = "Distribuição dos Alunos por Período de Ingresso (2011-2023)",
+    x = "Período de Ingresso",
+    y = "Número de Alunos"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  ylim(0, max(contagem_ingressos$Total_Alunos) * 1.1)
 
 
+###
 
+# Criar vetor completo dos períodos esperados
+periodos_completos <- sort(unique(c(as.character(dados_filtrados$`Período de Ingresso`), 
+                                    c("2023.1", "2023.2"))))
 
+# Forçar níveis do fator para todos os períodos, mesmo sem alunos
+dados_filtrados <- dados_filtrados %>%
+  mutate(`Período de Ingresso` = factor(`Período de Ingresso`, levels = periodos_completos))
+
+# Recalcular contagem
+contagem_ingressos <- dados_filtrados %>%
+  group_by(`Período de Ingresso`) %>%
+  summarise(Total_Alunos = n())
+
+# Agora gera o gráfico novamente com todos os períodos no eixo X
+ggplot(contagem_ingressos, aes(x = `Período de Ingresso`, y = Total_Alunos)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  geom_text(aes(label = Total_Alunos), vjust = -0.5, size = 3.5) +
+  labs(
+    title = "Distribuição dos Alunos por Período de Ingresso (2011-2023)",
+    x = "Período de Ingresso",
+    y = "Número de Alunos"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  ylim(0, max(contagem_ingressos$Total_Alunos) * 1.1)
+
+unique(dados_filtrados$`Período de Ingresso`)
 
 
