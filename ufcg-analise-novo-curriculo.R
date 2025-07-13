@@ -249,32 +249,48 @@ ggplot(contagem_ingressos, aes(x = `Período de Ingresso`, y = Total_Alunos)) +
 
 ###
 
-# Criar vetor completo dos períodos esperados
-periodos_completos <- sort(unique(c(as.character(dados_filtrados$`Período de Ingresso`), 
-                                    c("2023.1", "2023.2"))))
+# Contar número de alunos por sexo
+distribuicao_genero <- dados_filtrados %>%
+  group_by(Sexo) %>%
+  summarise(Total = n()) %>%
+  mutate(Sexo = factor(Sexo, levels = c("MASCULINO", "FEMININO")))  # organiza ordem, se necessário
 
-# Forçar níveis do fator para todos os períodos, mesmo sem alunos
-dados_filtrados <- dados_filtrados %>%
-  mutate(`Período de Ingresso` = factor(`Período de Ingresso`, levels = periodos_completos))
-
-# Recalcular contagem
-contagem_ingressos <- dados_filtrados %>%
-  group_by(`Período de Ingresso`) %>%
-  summarise(Total_Alunos = n())
-
-# Agora gera o gráfico novamente com todos os períodos no eixo X
-ggplot(contagem_ingressos, aes(x = `Período de Ingresso`, y = Total_Alunos)) +
-  geom_bar(stat = "identity", fill = "steelblue") +
-  geom_text(aes(label = Total_Alunos), vjust = -0.5, size = 3.5) +
+# Gráfico de barras
+ggplot(distribuicao_genero, aes(x = Sexo, y = Total, fill = Sexo)) +
+  geom_bar(stat = "identity", show.legend = TRUE) +
+  geom_text(aes(label = Total), vjust = -0.3, size = 4, color = "black") +
   labs(
-    title = "Distribuição dos Alunos por Período de Ingresso (2011-2023)",
-    x = "Período de Ingresso",
-    y = "Número de Alunos"
+    title = "Distribuição de Estudantes por Gênero (2011–2023)",
+    x = "Gênero",
+    y = "Quantidade de Estudantes",
+    fill = "Gênero"
   ) +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  ylim(0, max(contagem_ingressos$Total_Alunos) * 1.1)
-
-unique(dados_filtrados$`Período de Ingresso`)
+  scale_fill_manual(values = c("MASCULINO" = "#0072B2", "FEMININO" = "#D55E00")) +
+  theme(legend.position = "right")
 
 
+
+# Calcular total por gênero e percentual
+distribuicao_genero <- dados_filtrados %>%
+  group_by(Sexo) %>%
+  summarise(Total = n()) %>%
+  mutate(
+    Percentual = round((Total / sum(Total)) * 100, 1),
+    Label = paste0(Total, " (", Percentual, "%)"),
+    Sexo = factor(Sexo, levels = c("MASCULINO", "FEMININO"))
+  )
+
+# Gráfico de barras com legenda e rótulos formatados
+ggplot(distribuicao_genero, aes(x = Sexo, y = Total, fill = Sexo)) +
+  geom_bar(stat = "identity", show.legend = TRUE) +
+  geom_text(aes(label = Label), vjust = -0.5, size = 4, color = "black") +
+  labs(
+    title = "Distribuição de Estudantes por Gênero (2011–2023)",
+    x = "Gênero",
+    y = "Quantidade de Estudantes",
+    fill = "Gênero"
+  ) +
+  scale_fill_manual(values = c("MASCULINO" = "#0072B2", "FEMININO" = "#D55E00")) +
+  theme_minimal() +
+  theme(legend.position = "right")
