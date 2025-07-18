@@ -294,3 +294,59 @@ ggplot(distribuicao_genero, aes(x = Sexo, y = Total, fill = Sexo)) +
   scale_fill_manual(values = c("MASCULINO" = "#0072B2", "FEMININO" = "#D55E00")) +
   theme_minimal() +
   theme(legend.position = "right")
+
+###
+
+# Alunos ATIVO
+
+# Filtrar apenas alunos com status ATIVO
+dados_ativos <- dados_filtrados %>%
+  filter(Status == "ATIVO")
+
+# Contar por período de ingresso
+ativos_por_periodo <- dados_ativos %>%
+  group_by(`Período de Ingresso`) %>%
+  summarise(Total_Ativos = n()) %>%
+  arrange(`Período de Ingresso`) %>%
+  mutate(`Período de Ingresso` = factor(`Período de Ingresso`, levels = unique(`Período de Ingresso`)))
+
+# Gráfico de barras
+ggplot(ativos_por_periodo, aes(x = `Período de Ingresso`, y = Total_Ativos)) +
+  geom_bar(stat = "identity", fill = "#009E73") +
+  geom_text(aes(label = Total_Ativos), vjust = -0.5, size = 3.5, color = "black") +
+  labs(
+    title = "Número de Estudantes Ativos por Período de Ingresso (2011.1 a 2023.2)",
+    x = "Período de Ingresso",
+    y = "Total de Ativos"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  ylim(0, max(ativos_por_periodo$Total_Ativos) * 1.1)
+
+
+###
+
+library(tidyverse)
+
+# Filtrar apenas os alunos ativos
+ativos <- dados_filtrados %>%
+  filter(Status == "ATIVO")
+
+# Contar por Sexo
+ativos_por_genero <- ativos %>%
+  group_by(Sexo) %>%
+  summarise(Total = n()) %>%
+  arrange(desc(Total))
+
+# Visualizar a tabela
+print(ativos_por_genero)
+
+# Gráfico de barras
+ggplot(ativos_por_genero, aes(x = Sexo, y = Total, fill = Sexo)) +
+  geom_bar(stat = "identity") +
+  labs(
+    title = "Distribuição de Alunos Ativos por Gênero",
+    x = "Sexo",
+    y = "Número de Alunos Ativos"
+  ) +
+  theme_minimal()
