@@ -5,6 +5,7 @@ install.packages("forcats")
 install.packages("dplyr")
 install.packages("ggthemes")
 install.packages("viridis")
+install.packages("tidyverse")
 
 # Carregar bibliotecas
 library(readr)       # Leitura de arquivos CSV
@@ -348,5 +349,31 @@ ggplot(ativos_por_genero, aes(x = Sexo, y = Total, fill = Sexo)) +
     title = "Distribuição de Alunos Ativos por Gênero",
     x = "Sexo",
     y = "Número de Alunos Ativos"
+  ) +
+  theme_minimal()
+
+
+###
+
+# Filtrar apenas os alunos inativos com tipo de evasão 'GRADUADO'
+graduados <- dados_filtrados %>%
+  filter(Status == "INATIVO", Tipo_de_Evasao == "GRADUADO")
+
+# Contar por Sexo
+graduados_por_genero <- graduados %>%
+  group_by(Sexo) %>%
+  summarise(Total = n()) %>%
+  arrange(desc(Total))
+
+# Visualizar a tabela
+print(graduados_por_genero)
+
+# Gráfico de barras
+ggplot(graduados_por_genero, aes(x = Sexo, y = Total, fill = Sexo)) +
+  geom_bar(stat = "identity") +
+  labs(
+    title = "Distribuição de Alunos Graduados por Gênero",
+    x = "Sexo",
+    y = "Número de Alunos Graduados"
   ) +
   theme_minimal()
